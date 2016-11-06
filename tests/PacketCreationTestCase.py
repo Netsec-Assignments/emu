@@ -38,3 +38,22 @@ class PacketCreationTestCase(unittest.TestCase):
         self.assertEqual(result[1].flags, packet.Type.DATA)
         self.assertEqual(result[1].data_len, 512)
         self.assertEqual(result[1].data, buf[packet.MAX_LENGTH:])
+
+    def test_ack_packet(self):
+        # Input: packet with data flag set, ack num 0, seq 0, data len 1472;
+        # starting sequence number = 10
+        data = bytes([128] * packet.MAX_LENGTH)
+        data_packet = Packet(packet.Type.DATA, 0, 0, data)
+        start_seq = 10
+
+        result = packet.create_ack_packet(data_packet, start_seq)
+
+        # Expected output: packet with sequence number = start_seq_num
+        # flags = ACK, ack number: packet.MAX_LENGTH, data len = 0,
+        # data = None
+        self.assertEqual(result.seq_num, start_seq)
+        self.assertEqual(result.flags, packet.Type.ACK)
+        self.assertEqual(result.ack_num, packet.MAX_LENGTH)
+        self.assertEqual(result.data_len, 0)
+        self.assertEqual(result.data, None)
+        
