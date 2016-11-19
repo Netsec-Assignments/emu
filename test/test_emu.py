@@ -56,4 +56,55 @@ class PacketCreationTestCase(unittest.TestCase):
         self.assertEqual(result.ack_num, packet.MAX_LENGTH)
         self.assertEqual(result.data_len, 0)
         self.assertEqual(result.data, None)
-        
+
+    def test_syn_packet(self):
+        # Input: nothing
+
+        result = packet.create_syn_packet()
+
+        # Expected output: packet with
+        #   sequence number: 0
+        #   flags: SYN
+        #   ack number: N/A (not explicitly set)
+        #   data len: 0
+        #   data: None
+        self.assertEqual(result.seq_num, 0)
+        self.assertEqual(result.flags, packet.Type.SYN)
+        self.assertEqual(result.data_len, 0)
+        self.assertEqual(result.data, None)
+
+    def test_synack_packet_invalid(self):
+        # Input: packet with any flag other than SYN set
+
+        p = Packet(
+                   packet.Type.DATA,
+                   0,
+                   0,
+                   None)
+        with self.assertRaises(TypeError) as cm:
+            packet.create_synack_packet(p)
+
+        self.assertEqual(str(cm.exception), "packet must have only SYN flag set")
+    
+    def test_synack_packet_valid(self):
+        # Input: packet with SYN flag set, data len 0, seq 0 (other vars ignored)
+        p = Packet(
+                   packet.Type.SYN,
+                   0,
+                   0,
+                   None)
+
+        # Expected output: packet with
+        #   sequence number: 0
+        #   ack number: 1 (next expected byte)
+        #   data len: 0
+        #   data: none
+        result = packet.create_synack_packet(p)
+        self.assertEqual(result.flags, packet.Type.SYN | packet.Type.ACK)
+        self.assertEqual(result.seq_num, 0)
+        self.assertEqual(result.ack_num, 1)
+        self.assertEqual(result.data_len, 0)
+        self.assertEqual(result.data, None)
+
+if __name__ == "__main__":
+    unittest.main()

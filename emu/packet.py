@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 """Represents a packet for the protocol"""
 class Packet:
@@ -16,7 +16,7 @@ class Packet:
 MAX_LENGTH = 1472
 
 """Flags for different packet types"""
-class Type(Enum):
+class Type(IntEnum):
     DATA = 1
     ACK = 2
     SYN = 4
@@ -64,10 +64,19 @@ def create_ack_packet(data_packet, start_seq):
     return Packet(flags, ack_num, seq_num, None)
 
 def create_syn_packet():
-    pass
+    seq_num = 0
+    ack_num = 0
+    flags = Type.SYN
+    return Packet(flags, ack_num, seq_num, None)
 
 def create_synack_packet(syn_packet):
-    pass
+    if(syn_packet.flags != Type.SYN):
+        raise TypeError("packet must have only SYN flag set")
+
+    seq_num = 0
+    ack_num = 1
+    flags = Type.SYN | Type.ACK
+    return Packet(flags, ack_num, seq_num, None)
 
 def create_eot_pakcet():
     pass
