@@ -52,7 +52,7 @@ class Client:
         #self.dataSock.close()
         
 
-    def intro():
+    def intro(self):
         print("    Final Assignment: C7005")
         print("    Mat Siwoski and Shane Spoor\n")
         print("    Started the Client Program")
