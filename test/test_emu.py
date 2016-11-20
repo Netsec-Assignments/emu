@@ -106,5 +106,36 @@ class PacketCreationTestCase(unittest.TestCase):
         self.assertEqual(result.data_len, 0)
         self.assertEqual(result.data, None)
 
+    def test_eot_packet(self):
+        # Input: N/A
+        # Output: packet with EOT flag set and all other members at default values
+        result = packet.create_eot_packet()
+        self.assertEqual(result.flags, packet.Type.EOT)
+
+    def test_fin_packet(self):
+        # Input: N/A
+        # Output: packet with FIN flag set and all other members at default values
+        result = packet.create_fin_packet()
+        self.assertEqual(result.flags, packet.Type.FIN)
+
+    def test_packing(self):
+        # Input: a data packet containing MAX_LENGTH bytes of data
+        buf = bytes([128] * (packet.MAX_LENGTH))
+        p = Packet(
+                    packet.Type.DATA,
+                    0,
+                    0,
+                    buf)
+
+        packed = packet.pack_packet(p)
+        unpacked = packet.unpack_packet(packed)
+        
+        # Expected output (after packing and unpacking: a packet identical to the packed one
+        self.assertEqual(unpacked.flags, p.flags)
+        self.assertEqual(unpacked.ack_num, p.ack_num)
+        self.assertEqual(unpacked.seq_num, p.seq_num)
+        self.assertEqual(unpacked.data_len, p.data_len)
+        self.assertEqual(unpacked.data, p.data)
+
 if __name__ == "__main__":
     unittest.main()

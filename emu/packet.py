@@ -1,3 +1,4 @@
+import struct
 from enum import IntEnum
 
 """Represents a packet for the protocol"""
@@ -6,14 +7,15 @@ class Packet:
         self.flags = flags
         self.ack_num = ack_num
         self.seq_num = seq_num
-        self.data = data
 
-        if(self.data != None):
+        if(data != None):
             self.data_len = len(data)
         else:
             self.data_len = 0
 
-MAX_LENGTH = 1472
+        self.data = data
+
+MAX_LENGTH = 1461
 
 """Flags for different packet types"""
 class Type(IntEnum):
@@ -78,8 +80,30 @@ def create_synack_packet(syn_packet):
     flags = Type.SYN | Type.ACK
     return Packet(flags, ack_num, seq_num, None)
 
-def create_eot_pakcet():
-    pass
+def create_eot_packet():
+    return Packet(Type.EOT, 0, 0, None)
 
 def create_fin_packet():
-    pass
+    return Packet(Type.FIN, 0, 0, None)
+
+def pack_packet(p):
+    # Format string corresponds to
+    # unsigned char
+    # unsigned int
+    # unsigned int
+    # unsigned short
+    # char[] with a given number of members
+
+    format_str = "!BIIH"
+    format_str += str(p.data_len) + 's'
+
+    return struct.pack(format_str, p.flags, p.ack_num, p.seq_num, p.data_len, p.data)
+
+def unpack_packet(buf):
+    format_str = "!BIIH"
+    data_len = struct.unpack_from("!H", buf, 9)[0]
+
+    format_str += str(data_len) + 's'
+    flags, ack_num, seq_num, data_len, data = struct.unpack(format_str, buf)
+
+    return Packet(flags, ack_num, seq_num, data)
