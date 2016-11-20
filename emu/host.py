@@ -29,14 +29,14 @@ class Receiver:
 
             # ignore packets from the wrong host
             if(addr == self.emulator):
-                return pkt
+                return packet.unpack_packet(pkt)
 
     def run(self):
-        packet = self.wait_for_packet(False)
+        pkt = self.wait_for_packet(False)
         if(packet.type == packet.Type.FIN):
             return DONE
 
-        response = packet.create_synack_packet()
+        response = packet.pack_packet(packet.create_synack_packet())
         self.sock.sendto(response, (self.fwd_host, self.port))
         self.ack_num = 1
         
@@ -46,7 +46,7 @@ class Receiver:
         while(True):
             if(rcvd_window_bytes == window_size or ack_now == True):
                 self.ack_num += rcvd_window_bytes
-                response = packet.create_ack_packet(rcvd, self.seq_num)
+                response = packet.pack_packet(packet.create_ack_packet(rcvd, self.seq_num))
                 self.sock.sendto(response, (self.fwd_host, self.port))
                 ack_now = False
                 rcvd_window_bytes = 0
@@ -56,10 +56,11 @@ class Receiver:
             # wait_for_packet returns None on timeout
             if(rcvd == None):
                 # re-send last ACK
-                self.sock.sendto(packet.create_ack_packet(rcvd, self.seq_num), (self.fwd_host, self.port))
+                ack_packet = packet.pack_packet(packet.create_ack_packet(latest_rcvd, self.seq_num))
+                self.sock.sendto(ack_packet, (self.fwd_host, self.port))
             elif(rcvd.type == packet.Type.SYN):
                 # respond to SYN w/ SYN/ACK
-                response = packet.create_synack_packet()
+                response = packet.pack_packet(packet.create_synack_packet())
                 self.sock.sendto(response, (self.fwd_host, self.port))
             elif(rcvd.type == packet.Type.FIN):
                 return DONE
