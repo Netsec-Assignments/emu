@@ -11,15 +11,43 @@ SWITCH = 0
 DONE = 1
 
 class Sender:
-    def __init__(self, sock, port, emulator):
+    def __init__(self, sock, ip, port, emulator):
         self.sock = sock
+        self.ip = ip
         self.port = port
         self.emulator = emulator
         self.ack_num = 0
         self.seq_num = 0
 
+    def wait_for_packet(self, return_on_timeout = True):
+        while(True):
+            try:
+                pkt = self.sock.recvfrom(packet.MAX_LENGTH)
+            except socket.timeout:
+                if(return_on_timeout):
+                    return None
+                else:
+                    continue
+            if(addr == self.emulator):
+                return packet.unpack_packet(pkt)
+            
     def run(self):
         print("run")
+        self.sock.connect((self.ip, self.port))
+        response = packet.pack_packet(packet.create_syn_packet())
+        self.sock.sendto(response, (self.fwd_host, self.port))
+        self.ack_num = 1
+
+        rcvd_window_bytes = 0
+        ack_now = True
+        latest_rcvd = None
+        while(True):
+            rcvd = self.wait_for_packet(False)
+            #receive SYN ACK from Receiver
+            #if(rcvd.type == (packet.Type.SYN || packet.Type.ACK)):
+             #   ack_packet = packet.pack_packet(packet.create_ack_packet(latest_rcvd,self.seq_num))           
+              #  self.sock.sendto(response, (self.fwd_host, self.port))
+        exit()
 
 class Client:
     def __init__(self, cfg_file_path, is_receiver):
@@ -34,10 +62,10 @@ class Client:
         self.is_sender = is_sender
        
     def start(self):
-        print("run executed")
         while(True):
             if(self.is_sender):
-                sender = Sender(self.sock, self.config["port"], self.config["emulator"])
+                sender = Sender(self.sock, self.config["host0"], self.config["port"], self.config["emulator"])
+
                 result = sender.run()
                 if(result == DONE):
                     return
