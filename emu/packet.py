@@ -95,15 +95,20 @@ def pack_packet(p):
     # char[] with a given number of members
 
     format_str = "!BIIH"
-    format_str += str(p.data_len) + 's'
-
-    return struct.pack(format_str, p.flags, p.ack_num, p.seq_num, p.data_len, p.data)
+    if(p.data):
+        format_str += str(p.data_len) + 's'
+        return struct.pack(format_str, p.flags, p.ack_num, p.seq_num, p.data_len, p.data)
+    else:
+        return struct.pack(format_str, p.flags, p.ack_num, p.seq_num, p.data_len)
 
 def unpack_packet(buf):
     format_str = "!BIIH"
     data_len = struct.unpack_from("!H", buf, 9)[0]
 
-    format_str += str(data_len) + 's'
-    flags, ack_num, seq_num, data_len, data = struct.unpack(format_str, buf)
-
-    return Packet(flags, ack_num, seq_num, data)
+    if(data_len == 0):
+        format_str += str(data_len) + 's'
+        flags, ack_num, seq_num, data_len, data = struct.unpack(format_str, buf)
+        return Packet(flags, ack_num, seq_num, data)
+    else:
+        flags, ack_num, seq_num, data_len = struct.unpack(format_str, buf)
+        return Packet(flags, ack_num, seq_num, None)

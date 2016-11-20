@@ -1,9 +1,9 @@
 import emu.packet as packet
+#import emu.sender
 import socket
 import os
 import sys
 import json
-from enum import Enum
 
 # return values from run() to indicate what the controlling program should do
 SWITCH = 0
@@ -14,8 +14,15 @@ class Receiver:
         self.sock = sock
         self.port = port
         self.emulator = emulator
+
+        
         self.ack_num = 0
         self.seq_num = 0
+        self.is_done = False        
+        self.rcvd_window_bytes = 0
+        self.ack_now = False
+        self.finish_status = DONE
+        self.latest_ack = None
 
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
@@ -31,53 +38,76 @@ class Receiver:
             if(addr == self.emulator):
                 return packet.unpack_packet(pkt)
 
-    def run(self):
+    """We'll stay in this state until receiving a SYN or FIN"""
+    def wait_for_syn(self):
         pkt = self.wait_for_packet(False)
-        if(packet.type == packet.Type.FIN):
-            return DONE
+        if(pkt.flags == packet.Type.FIN):
+            self.is_done = True
+            self.finish_status = DONE
 
-        response = packet.pack_packet(packet.create_synack_packet())
-        self.sock.sendto(response, (self.fwd_host, self.port))
+        self.latest_ack = packet.create_synack_packet(pkt)
+        response = packet.pack_packet(self.latest_ack)
+        self.sock.sendto(response, (self.emulator, self.port))
         self.ack_num = 1
+
+    """Main function: sends off an ACK (or SYN/ACK) if necessary, then waits for and processes the next packet."""
+    def handle_next_packet(self):
+        if(self.rcvd_window_bytes == self.window_size or self.ack_now):
+            response = packet.pack_packet(self.latest_ack)
+            self.sock.sendto(response, (self.emulator, self.port))
+            
+            self.ack_now = False
+            self.rcvd_window_bytes = 0
+            # write byte_buf to file system or something
+
+        rcvd = self.wait_for_packet(True)
+
+        # wait_for_packet returns None on timeout
+        if(rcvd == None):
+            # re-send last ACK
+            response = packet.pack_packet(self.latest_ack)
+            self.sock.sendto(response, (self.emulator, self.port))
+
+        elif(rcvd.type == packet.Type.SYN):
+            response = packet.pack_packet(packet.create_synack_packet(rcvd))
+            self.sock.sendto(response, (self.emulator, self.port))
+
+        elif(rcvd.type == packet.Type.FIN):
+            self.is_done = True
+            self.finish_status = DONE
+
+        elif(rcvd.type == packet.Type.EOT):
+            self.is_done = True
+            self.finish_status = SWITCH
+
+        elif(rcvd.type == packet.Type.DATA):
+            # we got a spurious retransmission - send ACK for latest received data
+            if(rcvd.seq_num < self.ack_num):
+                self.sock.sendto(self.latest_ack, (self.emulator, self.port))
+                return
+
+            # the sender will always send max data unless it's almost out of data
+            # in that case, we don't want to wait for the timeout
+            # we should receive an EOT after this (but it shouldn't actually cause problems if not)
+            if(rcvd.data_len < packet.MAX_LENGTH):
+                self.ack_now = True
+
+            self.rcvd_window_bytes += packet.data_len
+            self.latest_ack = packet.create_ack_packet(rcvd, self.seq_num)
+            self.ack_num += rcvd_window_bytes
+            # add data to byte_buf
+
+
+    def run(self):
+        self.wait_for_syn()
+        if(self.is_done):
+            return self.finish_status
         
-        rcvd_window_bytes = 0
-        ack_now = False
-        latest_rcvd = None
-        while(True):
-            if(rcvd_window_bytes == window_size or ack_now == True):
-                self.ack_num += rcvd_window_bytes
-                response = packet.pack_packet(packet.create_ack_packet(rcvd, self.seq_num))
-                self.sock.sendto(response, (self.fwd_host, self.port))
-                ack_now = False
-                rcvd_window_bytes = 0
+        byte_buf = []
+        while(not self.is_done):
+            self.handle_next_packt()
 
-            rcvd = self.wait_for_packet(True)
-
-            # wait_for_packet returns None on timeout
-            if(rcvd == None):
-                # re-send last ACK
-                ack_packet = packet.pack_packet(packet.create_ack_packet(latest_rcvd, self.seq_num))
-                self.sock.sendto(ack_packet, (self.fwd_host, self.port))
-            elif(rcvd.type == packet.Type.SYN):
-                # respond to SYN w/ SYN/ACK
-                response = packet.pack_packet(packet.create_synack_packet())
-                self.sock.sendto(response, (self.fwd_host, self.port))
-            elif(rcvd.type == packet.Type.FIN):
-                return DONE
-            elif(rcvd.type == packet.Type.EOT):
-                return SWITCH
-            elif(rcvd.type == packet.Type.DATA):
-                if(rcvd.seq_num < self.ack_num):
-                    # resend last ACK
-                    ack_packet = packet.create_ack_packet(latest_rcvd, self.seq_num)
-                    self.sock.sendto(ack_packet, (self.fwd_host, self.port))
-                    continue
-
-                if(rcvd.data_len < packet.MAX_LENGTH):
-                    send_ack_now = True
-
-                rcvd_window_bytes += packet.data_len
-                latest_rcvd = rcvd         
+        return self.finish_status
 
 class Host:
     def __init__(self, cfg_file_path, is_receiver):
@@ -115,7 +145,7 @@ if(__name__ == "__main__"):
     if(sys.argv[2] == "receiver"):
         is_receiver = True
     elif(sys.argv[2] != "sender"):
-        print("usage: host <config file> [receiver|sender]")
+        print("usage: host [config file] [receiver|sender]")
         sys.exit(1)
 
     try:
