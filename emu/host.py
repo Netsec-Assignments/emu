@@ -121,5 +121,5 @@ if(__name__ == "__main__"):
     try:
         h = Host(sys.argv[1], is_receiver)
         h.run()
-    except TypeError as err:
+    except Exception as err:
         print(str(err))

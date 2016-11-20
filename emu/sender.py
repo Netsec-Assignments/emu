@@ -51,7 +51,7 @@ class Client:
         #self.dataSock.close()
         
 
-    def intro():
+    def intro(self):
         print("    Final Assignment: C7005")
         print("    Mat Siwoski and Shane Spoor\n")
         print("    Started the Client Program")
@@ -73,8 +73,8 @@ if(__name__ == "__main__"):
         sys.exit(1)
 
     try:
-        h = Host(sys.argv[1], is_sender)
-        h.intro()
-        h.start()
+        c = Client(sys.argv[1], is_sender)
+        c.intro()
+        c.start()
     except TypeError as err:
         print(str(err))
