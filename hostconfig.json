@@ -3,5 +3,6 @@
     "host1": "127.0.0.1",
     "emulator": "127.0.0.1",
     "timeout": 15.0,
-    "port": 25500
+    "port": 25500,
+    "window_size": 10
 }

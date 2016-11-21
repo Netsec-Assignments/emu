@@ -10,12 +10,14 @@ SWITCH = 0
 DONE = 1
 
 class Receiver:
-    def __init__(self, sock, port, emulator):
+    def __init__(self, sock, port, emulator, window_size):
+        # Config variables        
         self.sock = sock
         self.port = port
         self.emulator = emulator
-
+        self.window_size = window_size
         
+        # State variables
         self.ack_num = 0
         self.seq_num = 0
         self.is_done = False        
@@ -68,22 +70,23 @@ class Receiver:
             response = packet.pack_packet(self.latest_ack)
             self.sock.sendto(response, (self.emulator, self.port))
 
-        elif(rcvd.type == packet.Type.SYN):
+        elif(rcvd.flags == packet.Type.SYN):
             response = packet.pack_packet(packet.create_synack_packet(rcvd))
             self.sock.sendto(response, (self.emulator, self.port))
 
-        elif(rcvd.type == packet.Type.FIN):
+        elif(rcvd.flags == packet.Type.FIN):
             self.is_done = True
             self.finish_status = DONE
 
-        elif(rcvd.type == packet.Type.EOT):
+        elif(rcvd.flags == packet.Type.EOT):
             self.is_done = True
             self.finish_status = SWITCH
 
-        elif(rcvd.type == packet.Type.DATA):
+        elif(rcvd.flags == packet.Type.DATA):
             # we got a spurious retransmission - send ACK for latest received data
             if(rcvd.seq_num < self.ack_num):
-                self.sock.sendto(self.latest_ack, (self.emulator, self.port))
+                response = packet.pack_packet(self.latest_ack)
+                self.sock.sendto(response, (self.emulator, self.port))
                 return
 
             # the sender will always send max data unless it's almost out of data
@@ -124,7 +127,7 @@ class Host:
     def run(self):
         while(True):
             if(self.is_recv):
-                receiver = Receiver(self.sock, self.config["port"], self.config["emulator"])
+                receiver = Receiver(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"])
                 result = receiver.run()
                 if(result == DONE):
                     return

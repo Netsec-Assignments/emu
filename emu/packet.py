@@ -105,7 +105,7 @@ def unpack_packet(buf):
     format_str = "!BIIH"
     data_len = struct.unpack_from("!H", buf, 9)[0]
 
-    if(data_len == 0):
+    if(data_len != 0):
         format_str += str(data_len) + 's'
         flags, ack_num, seq_num, data_len, data = struct.unpack(format_str, buf)
         return Packet(flags, ack_num, seq_num, data)
