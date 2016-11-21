@@ -16,13 +16,19 @@ class Sender:
         self.ip = ip
         self.port = port
         self.emulator = emulator
+
         self.ack_num = 0
         self.seq_num = 0
+        self.is_done = False
+        self.rcvd_window_bytes = 0
+        self.ack_now = False
+        self.finish_status = DONE
+        self.latest_ack = None
 
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
             try:
-                pkt = self.sock.recvfrom(packet.MAX_LENGTH)
+                pkt, addr = self.sock.recvfrom(packet.MAX_LENGTH)
             except socket.timeout:
                 if(return_on_timeout):
                     return None
@@ -31,23 +37,50 @@ class Sender:
             if(addr == self.emulator):
                 return packet.unpack_packet(pkt)
             
-    def run(self):
-        print("run")
-        self.sock.connect((self.ip, self.port))
+    """We'll stay in this state until receiving a SYN or FIN"""
+    def wait_for_syn_ack(self):
+        pkt = self.wait_for_packet(False)
+        if(pkt.flags == packet.Type.FIN):
+            self.is_done = True
+            self.finish_status = DONE
+        elif(pkt.type == (packet.Type.SYN || packet.Type.ACK)):
+            self.ack_num += rcvd_window_bytes
+
+
+    """Send initial syn to begin connection"""
+    def send_syn(self):
         response = packet.pack_packet(packet.create_syn_packet())
-        self.sock.sendto(response, (self.fwd_host, self.port))
+        self.sock.sendto(response, (self.emulator, self.port))
         self.ack_num = 1
 
-        rcvd_window_bytes = 0
-        ack_now = True
-        latest_rcvd = None
-        while(True):
-            rcvd = self.wait_for_packet(False)
-            #receive SYN ACK from Receiver
-            #if(rcvd.type == (packet.Type.SYN || packet.Type.ACK)):
-             #   ack_packet = packet.pack_packet(packet.create_ack_packet(latest_rcvd,self.seq_num))           
-              #  self.sock.sendto(response, (self.fwd_host, self.port))
-        exit()
+        self.rcvd_window_bytes = 0
+        self.ack_now = True
+        self.latest_rcvd = None
+
+    """Send ack to acknowledge syn ack to begin sending data"""
+    """not necessary as we are not doing three way handshake"""
+    def send_ack(self):
+        response = packet.pack_packet(packet.create_ack_packet())
+        self.sock.sendto(response, (self.emulator, self.port))
+        self.ack_num = 1
+
+        self.rcvd_window_bytes = 0
+        self.ack_now = True
+        self.latest_rcvd = None
+
+    """Begin sending data to the server """    
+    def send_data(self):
+        
+    def run(self):
+        self.sock.connect((self.ip, self.port))
+        self.send_syn()
+        if (self.is_done):
+            return self.finish_status
+
+        byte_buf = []
+        while(not self.is_done):
+           self.wait_for_syn_ack()
+            
 
 class Client:
     def __init__(self, cfg_file_path, is_receiver):
@@ -73,12 +106,6 @@ class Client:
                     self.is_sender = False
             else:
                 pass
-        #connect to channel
-        #self.dataSock.connect((self.ipAddr, self.portNum))
-        #self.dataSock.setblocking(0)
-        #print("Disconnected.")
-        #self.dataSock.close()
-        
 
     def intro(self):
         print("    Final Assignment: C7005")

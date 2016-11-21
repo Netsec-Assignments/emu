@@ -1,4 +1,4 @@
-import emu.packet as packet
+import packet
 #import emu.sender
 import socket
 import os
