@@ -43,7 +43,7 @@ class Sender:
         if(pkt.flags == packet.Type.FIN):
             self.is_done = True
             self.finish_status = DONE
-        elif(pkt.type == (packet.Type.SYN || packet.Type.ACK)):
+        elif(pkt.type == (packet.Type.SYN or packet.Type.ACK)):
             self.ack_num += rcvd_window_bytes
 
 
@@ -70,6 +70,7 @@ class Sender:
 
     """Begin sending data to the server """    
     def send_data(self):
+        print("test")
         
     def run(self):
         self.sock.connect((self.ip, self.port))
