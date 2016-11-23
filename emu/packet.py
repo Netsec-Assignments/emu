@@ -32,25 +32,25 @@ def create_data_packets(buf, start_seq):
 
     ack_num = 0
     buf_len = len(buf)
-    whole_chunks = buf_len // MAX_LENGTH
-    partial_chunk_size = buf_len % MAX_LENGTH
+    whole_chunks = buf_len // MAX_DATA_LENGTH
+    partial_chunk_size = buf_len % MAX_DATA_LENGTH
 
     packets = []
 
     # Make as many full-sized packets as we can out of the provided buffer
     for i in range(0, whole_chunks):
-        slice_start = i * MAX_LENGTH
-        slice_end = (i + 1) * MAX_LENGTH
+        slice_start = i * MAX_DATA_LENGTH
+        slice_end = (i + 1) * MAX_DATA_LENGTH
         p = Packet(
                    Type.DATA,
                    ack_num,
-                   start_seq + (i * MAX_LENGTH),
+                   start_seq + (i * MAX_DATA_LENGTH),
                    bytes(buf[slice_start:slice_end]))
         packets.append(p)
 
     # If there were any left-over bytes, make another packet with those
     if(partial_chunk_size):
-        partial_chunk_seq = start_seq + (whole_chunks * MAX_LENGTH)
+        partial_chunk_seq = start_seq + (whole_chunks * MAX_DATA_LENGTH)
         p = Packet(
                    Type.DATA,
                    ack_num,
