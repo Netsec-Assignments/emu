@@ -50,12 +50,13 @@ def create_data_packets(buf, start_seq):
 
     # If there were any left-over bytes, make another packet with those
     if(partial_chunk_size):
-        partial_chunk_seq = start_seq + (whole_chunks * MAX_DATA_LENGTH)
+        partial_chunk_offset = whole_chunks * MAX_DATA_LENGTH
+        partial_chunk_seq = start_seq + partial_chunk_offset
         p = Packet(
                    Type.DATA,
                    ack_num,
                    partial_chunk_seq,
-                   bytes(buf[partial_chunk_seq:]))
+                   bytes(buf[partial_chunk_offset:]))
         packets.append(p)
 
     return packets

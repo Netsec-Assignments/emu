@@ -54,6 +54,12 @@ if(__name__ == "__main__"):
             sock.sendto(packet.pack_packet(packet.create_syn_packet()), (dest, port))
             print("sent SYN packet to {} on port {}".format(dest, port))
 
+        elif(command == "SYNACK"):
+            if(args):
+                print("SYNACK doesn't take any arguments. Sending SYN/ACK anyway")
+            sock.sendto(packet.pack_packet(packet.create_synack_packet(packet.create_syn_packet())), (dest, port))
+            print("sent SYN/ACK packet with to {} on port {}".format(dest, port))
+
         elif(command == "ACK"):
             if(len(args) != 1):
                 print("usage: ACK [ack_num] (enter 'help ACK' for more)")
