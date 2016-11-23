@@ -29,7 +29,7 @@ class Receiver:
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
             try:
-                pkt, addr = self.sock.recvfrom(packet.MAX_LENGTH)
+                pkt, addr = self.sock.recvfrom(packet.MAX_PACKET_LENGTH)
             except socket.timeout:
                 if(return_on_timeout):
                     return None
@@ -56,7 +56,7 @@ class Receiver:
 
     """Main function: sends off an ACK (or SYN/ACK) if necessary, then waits for and processes the next packet."""
     def handle_next_packet(self):
-        if(self.rcvd_window_bytes == (self.window_size * packet.MAX_LENGTH) or self.ack_now):
+        if(self.rcvd_window_bytes == (self.window_size * packet.MAX_DATA_LENGTH) or self.ack_now):
             print("sending ack {}".format(self.ack_num))
             response = packet.pack_packet(self.latest_ack)
             self.sock.sendto(response, (self.emulator, self.port))
@@ -101,7 +101,7 @@ class Receiver:
             # the sender will always send max data unless it's almost out of data
             # in that case, we don't want to wait for the timeout
             # we should receive an EOT after this (but it shouldn't actually cause problems if not)
-            if(rcvd.data_len < packet.MAX_LENGTH):
+            if(rcvd.data_len < packet.MAX_DATA_LENGTH):
                 print("packet had length < max length; acking now")
                 self.ack_now = True
 

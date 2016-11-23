@@ -15,7 +15,8 @@ class Packet:
 
         self.data = data
 
-MAX_LENGTH = 1461
+MAX_DATA_LENGTH = 1461
+MAX_PACKET_LENGTH = 1472
 
 """Flags for different packet types"""
 class Type(IntEnum):
@@ -35,7 +36,6 @@ def create_data_packets(buf, start_seq):
     partial_chunk_size = buf_len % MAX_LENGTH
 
     packets = []
-    print(str(buf_len))
 
     # Make as many full-sized packets as we can out of the provided buffer
     for i in range(0, whole_chunks):
