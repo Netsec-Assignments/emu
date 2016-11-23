@@ -92,11 +92,16 @@ class Receiver:
 
         elif(rcvd.flags == packet.Type.DATA):
             # we got a spurious retransmission - send ACK for latest received data
-            if(rcvd.seq_num < self.ack_num):
-                print("spurious retransmission with sequence number {}, retransmitting ack {}".format(rcvd.seq_num, self.latest_ack.ack_num))
-                response = packet.pack_packet(self.latest_ack)
-                self.sock.sendto(response, (self.emulator, self.port))
-                return
+            if(rcvd.seq_num != self.ack_num):
+                if(rcvd.seq_num < self.ack_num):
+                    print("spurious retransmission with sequence number {}, retransmitting ack {}".format(rcvd.seq_num, self.latest_ack.ack_num))
+                    response = packet.pack_packet(self.latest_ack)
+                    self.sock.sendto(response, (self.emulator, self.port))
+                    return
+                else:
+                    # != and ! < , so it's greater than the ACK number we were expecting, AKA packets were dropped (or re-ordered, but that's unlikely)
+                    print("packet with sequence number {} was dropped; waiting for timeout and retransmission".format(self.ack_num))
+                    return
 
             # the sender will always send max data unless it's almost out of data
             # in that case, we don't want to wait for the timeout
