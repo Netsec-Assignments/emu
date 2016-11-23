@@ -59,7 +59,11 @@ def create_data_packets(buf, start_seq):
 
     return packets
 
-def create_ack_packet(data_packet, start_seq):
+def create_ack_packet(ack_num, seq_num):
+    flags = Type.ACK
+    return Packet(flags, ack_num, seq_num, None)
+
+def create_ack_packet_from_data(data_packet, start_seq):
     seq_num = start_seq
     ack_num = data_packet.seq_num + data_packet.data_len
     flags = Type.ACK
