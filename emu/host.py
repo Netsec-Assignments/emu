@@ -36,11 +36,9 @@ class Receiver:
                 else:
                     continue
 
-            print("received packet")
-
             # ignore packets from the wrong host
-            #if(addr == self.emulator):
-            return packet.unpack_packet(pkt)
+            if(addr == self.emulator):
+                return packet.unpack_packet(pkt)
 
     """We'll stay in this state until receiving a SYN or FIN"""
     def wait_for_syn(self):
@@ -58,7 +56,7 @@ class Receiver:
 
     """Main function: sends off an ACK (or SYN/ACK) if necessary, then waits for and processes the next packet."""
     def handle_next_packet(self):
-        if(self.rcvd_window_bytes == self.window_size or self.ack_now):
+        if(self.rcvd_window_bytes == (self.window_size * packet.MAX_LENGTH) or self.ack_now):
             print("sending ack {}".format(self.ack_num))
             response = packet.pack_packet(self.latest_ack)
             self.sock.sendto(response, (self.emulator, self.port))
@@ -95,7 +93,7 @@ class Receiver:
         elif(rcvd.flags == packet.Type.DATA):
             # we got a spurious retransmission - send ACK for latest received data
             if(rcvd.seq_num < self.ack_num):
-                print("spurious retransmission with sequence number {}, retransmitting ack {}".format(recv.seq_num, self.latest_ack.ack_num))
+                print("spurious retransmission with sequence number {}, retransmitting ack {}".format(rcvd.seq_num, self.latest_ack.ack_num))
                 response = packet.pack_packet(self.latest_ack)
                 self.sock.sendto(response, (self.emulator, self.port))
                 return
@@ -107,9 +105,9 @@ class Receiver:
                 print("packet had length < max length; acking now")
                 self.ack_now = True
 
-            self.rcvd_window_bytes += packet.data_len
+            self.rcvd_window_bytes += rcvd.data_len
             self.latest_ack = packet.create_ack_packet_from_data(rcvd, self.seq_num)
-            self.ack_num += rcvd_window_bytes
+            self.ack_num += rcvd.data_len
             print("received packet with sequence number {}; received {} bytes this window, current ack number is {}".format(rcvd.seq_num, self.rcvd_window_bytes, self.ack_num))
             # add data to byte_buf
 
