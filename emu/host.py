@@ -102,7 +102,7 @@ class Receiver:
             # in that case, we don't want to wait for the timeout
             # we should receive an EOT after this (but it shouldn't actually cause problems if not)
             if(rcvd.data_len < packet.MAX_DATA_LENGTH):
-                print("packet had length < max length; acking now")
+                print("packet had length {}; acking now".format(str(rcvd.data_len)))
                 self.ack_now = True
 
             self.rcvd_window_bytes += rcvd.data_len
