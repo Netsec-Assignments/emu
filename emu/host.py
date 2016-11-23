@@ -37,7 +37,7 @@ class Receiver:
                     continue
 
             # ignore packets from the wrong host
-            if(addr == self.emulator):
+            if(addr[0] == self.emulator):
                 return packet.unpack_packet(pkt)
 
     """We'll stay in this state until receiving a SYN or FIN"""
@@ -135,7 +135,7 @@ class Host:
             self.config = json.load(config_file)
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((socket.gethostname(), self.config["port"]))
+        self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
         self.is_recv = is_receiver
 
