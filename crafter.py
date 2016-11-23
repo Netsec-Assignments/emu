@@ -86,7 +86,7 @@ if(__name__ == "__main__"):
             if(args):
                 print("FIN doesn't take any arguments. Sending FIN anyway")
             sock.sendto(packet.pack_packet(packet.create_fin_packet()), (dest, port))
-            print("sent SYN packet to {} on port {}".format(dest, port))
+            print("sent FIN packet to {} on port {}".format(dest, port))
 
         elif(command == "exit"):
             print("see ya")
