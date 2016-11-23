@@ -16,6 +16,18 @@ class ReceiverTestCase(unittest.TestCase):
         r.wait_for_syn()
 
         mock_socket.sendto.assert_called_with(expected_response, ("127.0.0.1", 10))
+
+    @mock.patch('emu.host.socket.socket')
+    def test_dup_syn(self, mock_socket):
+        syn_packet = packet.create_syn_packet()
+        mock_socket.recvfrom.side_effect = [(packet.pack_packet(syn_packet), "127.0.0.1"),
+                                            (packet.pack_packet(syn_packet), "127.0.0.1")]
+
+        expected_response = packet.pack_packet(packet.create_synack_packet(syn_packet))
+        r = host.Receiver(mock_socket, 10, "127.0.0.1", 10)
+        r.wait_for_syn()
+        r.handle_next_packet()
+        mock_socket.sendto.assert_called_with(expected_response, ("127.0.0.1", 10)) # assert_called_with = most recent call
     
     @mock.patch('emu.host.socket.socket')
     def test_data_timeout(self, mock_socket):
@@ -49,6 +61,7 @@ class ReceiverTestCase(unittest.TestCase):
     def test_data(self, mock_socket):
         data = bytes([128] * packet.MAX_LENGTH * 10)
         data_packets = packet.create_data_packets(data, 1)
+        # return a different value on each call
         mock_socket.recvfrom.side_effect = [(packet.pack_packet(data_packets[0]), "127.0.0.1"),
                                             (packet.pack_packet(data_packets[1]), "127.0.0.1"),
                                             (packet.pack_packet(data_packets[2]), "127.0.0.1"),
