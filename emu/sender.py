@@ -74,12 +74,21 @@ class Sender:
         self.ack_now = True
         self.latest_rcvd = None
 
+    """Send EOT at the end of the transmission"""
+    def send_eot(self):
+        self.sock.sendto(packet.pack_packet(packet.create_eot_packet()), (self.emulator, self.port))
+
+"""Send FIN as the last packet when the data is completed"""
+    def send_fin(self):
+        self.sock.sendto(packet.pack_packet(packet.create_fin_packet()), (self.emulator, self.port))
+        
     """Begin sending data to the server """    
     def send_data(self):
-        print("test")
-
-        self.sock.sendto(response, (self.emulator, self.port))
-        
+        packets = packet.create_data_packets(bytes([128] * int(args[1])), int(args[0]))
+        for p in packets:
+            sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
+            print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, dest, port))
+        send_fin(self)
         
     def run(self):
         print("starting the connection")
