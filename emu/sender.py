@@ -11,10 +11,9 @@ SWITCH = 0
 DONE = 1
 
 class Sender:
-    def __init__(self, sock, ip, port, emulator, window_size):
+    def __init__(self, sock, port, emulator, window_size):
         #Config variables
         self.sock = sock
-        self.ip = ip
         self.port = port
         self.emulator = emulator
         self.window_size = window_size
@@ -50,13 +49,13 @@ class Sender:
         elif(pkt.flags == (packet.Type.SYN or packet.Type.ACK)):
             print("received SYN_ACK packet: responding with ACK")
             self.latest_ack = pkt
-            self.seq_num = Max(pkt.ack_num, self.seq_num)
+            self.seq_num = max(pkt.ack_num, self.seq_num)
 
 
     """Send initial syn to begin connection"""
     def send_syn(self):
         response = packet.pack_packet(packet.create_syn_packet())
-        self.sock.sendto(respons, (self.emulator, self.port))
+        self.sock.sendto(response, (self.emulator, self.port))
         self.seq_num = 1
         self.rcvd_window_bytes = 0
         self.latest_rcvd = None
@@ -80,20 +79,13 @@ class Sender:
         
     """Begin sending data to the server """    
     def send_data(self):
-        packets = packet.create_data_packets(bytes([128] * packet.MAX_LENGTH * self.window_size), self.ack_num)
+        packets = packet.create_data_packets(bytes([128] * packet.MAX_DATA_LENGTH * self.window_size), self.seq_num)
         for p in packets:
-            sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
-            print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, dest, port))
-        pkt = self.wait_for_packet()
-        if(self.is_done):
-            return self.finish_status
-        elif (pkt.flags.ACK | packet.Type.ACK):
-            print("received ACK from host")
-            self.seq_num = Max(pkt.ack_num,self.seq_num)
+            self.sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
+            print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, self.emulator, self.port))
         
     def run(self):
         print("starting the connection")
-        self.sock.connect((self.ip, self.port))
         self.send_syn()
         if(self.is_done):
             print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
@@ -107,7 +99,21 @@ class Sender:
 
         print("entering main sender loop")
         while(not self.is_done):
-            self.send_data()
+            pkt = self.wait_for_packet()
+            if (pkt != None):
+                if (pkt.flags & packet.Type.ACK):
+                    print("received ACK with ack_num {} from host {}".format(pkt.ack_num, self.emulator))
+                    self.seq_num = max(pkt.ack_num, self.seq_num)   
+                    self.send_data()
+                elif (pkt.flags & packet.Type.EOT):
+                    self.is_done = True
+                    self.finish_status = SWITCH                
+                elif (pkt.flags & packet.Type.FIN):
+                    self.is_done = True
+                    self.finish_status = DONE
+            else:
+                print("timed out while waiting for ACK")
+                self.send_data()
 
         print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
         return self.finish_status            
@@ -121,13 +127,14 @@ class Client:
             self.config = json.load(config_file)
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
         self.is_sender = is_sender
        
     def start(self):
         while(True):
             if(self.is_sender):
-                sender = Sender(self.sock, self.config["host0"], self.config["port"], self.config["emulator"], self.config["window_size"])
+                sender = Sender(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"])
 
                 result = sender.run()
                 if(result == DONE):
