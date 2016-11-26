@@ -1,5 +1,5 @@
-#import emu.packet as packet
-import packet
+import emu.packet as packet
+#import packet
 import socket
 import os
 import sys
@@ -11,7 +11,7 @@ SWITCH = 0
 DONE = 1
 
 class Sender:
-    def __init__(self, sock, ip, port, emulator):
+    def __init__(self, sock, ip, port, emulator, window_size):
         #Config variables
         self.sock = sock
         self.ip = ip
@@ -31,7 +31,7 @@ class Sender:
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
             try:
-                pkt, addr = self.sock.recvfrom(packet.MAX_LENGTH)
+                pkt, addr = self.sock.recvfrom(packet.MAX_DATA_LENGTH)
             except socket.timeout:
                 if(return_on_timeout):
                     return None
@@ -49,18 +49,16 @@ class Sender:
             self.finish_status = DONE            
         elif(pkt.flags == (packet.Type.SYN or packet.Type.ACK)):
             print("received SYN_ACK packet: responding with ACK")
-            self.latest_ack = packet.
-            self.ack_num += rcvd_window_bytes
+            self.latest_ack = pkt
+            self.seq_num = Max(pkt.ack_num, self.seq_num)
 
 
     """Send initial syn to begin connection"""
     def send_syn(self):
         response = packet.pack_packet(packet.create_syn_packet())
-        self.sock.sendto(response, (self.emulator, self.port))
-        self.ack_num = 1
-
+        self.sock.sendto(respons, (self.emulator, self.port))
+        self.seq_num = 1
         self.rcvd_window_bytes = 0
-        self.ack_now = True
         self.latest_rcvd = None
 
     """Send ack to acknowledge syn ack to begin sending data"""
@@ -68,8 +66,6 @@ class Sender:
     def send_ack(self):
         response = packet.pack_packet(packet.create_ack_packet())
         self.sock.sendto(response, (self.emulator, self.port))
-        self.ack_num = 1
-
         self.rcvd_window_bytes = 0
         self.ack_now = True
         self.latest_rcvd = None
@@ -78,17 +74,22 @@ class Sender:
     def send_eot(self):
         self.sock.sendto(packet.pack_packet(packet.create_eot_packet()), (self.emulator, self.port))
 
-"""Send FIN as the last packet when the data is completed"""
+    """Send FIN as the last packet when the data is completed"""
     def send_fin(self):
         self.sock.sendto(packet.pack_packet(packet.create_fin_packet()), (self.emulator, self.port))
         
     """Begin sending data to the server """    
     def send_data(self):
-        packets = packet.create_data_packets(bytes([128] * int(args[1])), int(args[0]))
+        packets = packet.create_data_packets(bytes([128] * packet.MAX_LENGTH * self.window_size), self.ack_num)
         for p in packets:
             sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
             print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, dest, port))
-        send_fin(self)
+        pkt = self.wait_for_packet()
+        if(self.is_done):
+            return self.finish_status
+        elif (pkt.flags.ACK | packet.Type.ACK):
+            print("received ACK from host")
+            self.seq_num = Max(pkt.ack_num,self.seq_num)
         
     def run(self):
         print("starting the connection")
@@ -126,7 +127,7 @@ class Client:
     def start(self):
         while(True):
             if(self.is_sender):
-                sender = Sender(self.sock, self.config["host0"], self.config["port"], self.config["emulator"])
+                sender = Sender(self.sock, self.config["host0"], self.config["port"], self.config["emulator"], self.config["window_size"])
 
                 result = sender.run()
                 if(result == DONE):
