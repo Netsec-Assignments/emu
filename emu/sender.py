@@ -30,7 +30,7 @@ class Sender:
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
             try:
-                pkt, addr = self.sock.recvfrom(packet.MAX_DATA_LENGTH)
+                pkt, addr = self.sock.recvfrom(packet.MAX_PACKET_LENGTH)
             except socket.timeout:
                 if(return_on_timeout):
                     return None
