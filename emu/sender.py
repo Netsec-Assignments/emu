@@ -101,7 +101,8 @@ class Sender:
             self.send_eot()
 
         end = self.current_offset + self.bytes_to_read
-        packets = packet.create_data_packets(bytes(self.read_data[self.current_offset:end], "UTF-8"), self.seq_num)
+
+        packets = packet.create_data_packets(self.read_data[self.current_offset:end], self.seq_num)
         for p in packets:
             self.sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
             print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, self.emulator, self.port))
@@ -112,6 +113,8 @@ class Sender:
         if(self.is_done):
             print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
             return self.finish_status
+        
+#        print(self.file_size)
 
         print("waiting for SYN_ACK packet...")
         self.wait_for_syn_ack()

@@ -191,7 +191,7 @@ class Host:
                     self.is_recv = False
                     self.file.close()
             else:
-                if(self.send_idx > len(self.file_list)):
+                if(self.send_idx + 1 > len(self.file_list)):
                     response = packet.create_fin_packet()
                     self.sock.sendto(response, (self.config["emulator"], self.config["port"]))
                     return
@@ -210,8 +210,9 @@ class Host:
                         else:
                             self.file.close()
                             return
-                    except:
-                        print("error while processing file {}, sending FIN".format(self.file_list[self.send_idx]))
+                    except Exception as e:
+                        print(str(e))
+                        print("error while processing file {}, sending FIN".format(self.file_list[self.send_idx-1]))
                         response = packet.create_fin_packet()
                         self.sock.sendto(response, (self.config["emulator"], self.config["port"]))
                         return
