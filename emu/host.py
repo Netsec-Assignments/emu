@@ -197,7 +197,7 @@ class Host:
                     self.file.close()
             else:
                 if(self.send_idx + 1 > len(self.file_list)):
-                    response = packet.create_fin_packet()
+                    response = packet.pack_packet(packet.create_fin_packet())
                     self.sock.sendto(response, (self.config["emulator"], self.config["port"]))
                     return
                 else:
