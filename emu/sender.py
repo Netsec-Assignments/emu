@@ -97,6 +97,8 @@ class Sender:
             print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
             return self.finish_status
 
+        self.send_data()
+
         print("entering main sender loop")
         while(not self.is_done):
             pkt = self.wait_for_packet()

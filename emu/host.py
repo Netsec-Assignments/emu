@@ -91,12 +91,10 @@ class Receiver:
             self.finish_status = SWITCH
 
         elif(rcvd.flags == packet.Type.DATA):
-            # we got a spurious retransmission - send ACK for latest received data
+            # we got a spurious retransmission
             if(rcvd.seq_num != self.ack_num):
                 if(rcvd.seq_num < self.ack_num):
-                    print("spurious retransmission with sequence number {}, retransmitting ack {}".format(rcvd.seq_num, self.latest_ack.ack_num))
-                    response = packet.pack_packet(self.latest_ack)
-                    self.sock.sendto(response, (self.emulator, self.port))
+                    print("spurious retransmission with sequence number {}".format(rcvd.seq_num))
                     return
                 else:
                     # != and ! < , so it's greater than the ACK number we were expecting, AKA packets were dropped (or re-ordered, but that's unlikely)
