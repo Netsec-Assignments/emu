@@ -29,7 +29,9 @@ class Sender:
         self.current_offset = 0
         self.bytes_left = 0
         self.bytes_to_read = 0
-    
+        self.retries_eot = 0
+        self.retries_syn = 0
+
         #File info
         self.read_data = read_data
         self.file_size = file_size
