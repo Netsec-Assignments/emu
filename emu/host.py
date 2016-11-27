@@ -150,9 +150,9 @@ class Host:
             self.config = json.load(config_file)
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.file = outputfile
 
     def run(self):
