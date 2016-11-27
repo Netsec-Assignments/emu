@@ -147,7 +147,7 @@ class Host:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.is_recv = is_receiver
 
     def run(self):
