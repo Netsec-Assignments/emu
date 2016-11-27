@@ -29,8 +29,10 @@ class Sender:
         self.current_offset = 0
         self.bytes_left = 0
         self.bytes_to_read = 0
-        self.retries_eot = 0
         self.retries_syn = 0
+
+        # EOT state
+        self.sent_eot = False
 
         #File info
         self.read_data = read_data
@@ -52,16 +54,19 @@ class Sender:
     def wait_for_syn_ack(self):
         pkt = self.wait_for_packet(True)
         
-        if (pkt == None):
-            self.send_syn()
-        elif(pkt.flags == packet.Type.FIN):
-            print("received FIN packet, finishing up")
-            self.is_done = True
-            self.finish_status = DONE            
-        elif(pkt.flags == (packet.Type.SYN | packet.Type.ACK)):
-            print("received SYN_ACK packet: responding with ACK")
-            self.latest_ack = pkt
-            self.seq_num = max(pkt.ack_num, self.seq_num)
+        while(True):
+            if (pkt == None):
+                self.send_syn()
+            elif(pkt.flags == packet.Type.FIN):
+                print("received FIN packet, finishing up")
+                self.is_done = True
+                self.finish_status = DONE
+                return     
+            elif(pkt.flags == (packet.Type.SYN | packet.Type.ACK)):
+                print("received SYN_ACK packet: responding with ACK")
+                self.latest_ack = pkt
+                self.seq_num = max(pkt.ack_num, self.seq_num)
+                return
         
 
     """Send initial syn to begin connection"""
@@ -72,18 +77,15 @@ class Sender:
         self.rcvd_window_bytes = 0
         self.latest_rcvd = None
 
-    """Send ack to acknowledge syn ack to begin sending data"""
-    """not necessary as we are not doing three way handshake"""
+    """Send ack to acknowledge EOT/ACK to begin sending data"""
     def send_ack(self):
-        response = packet.pack_packet(packet.create_ack_packet())
+        response = packet.pack_packet(packet.create_ack_packet(0, 0))
         self.sock.sendto(response, (self.emulator, self.port))
-        self.rcvd_window_bytes = 0
-        self.ack_now = True
-        self.latest_rcvd = None
 
     """Send EOT at the end of the transmission"""
     def send_eot(self):
         self.sock.sendto(packet.pack_packet(packet.create_eot_packet()), (self.emulator, self.port))
+        self.sent_eot = True
 
     """Send FIN as the last packet when the data is completed"""
     def send_fin(self):
@@ -127,7 +129,9 @@ class Sender:
                     print("received ACK with ack_num {} from host {}".format(pkt.ack_num, self.emulator))
                     self.seq_num = max(pkt.ack_num, self.seq_num)
                     self.send_data()
-                elif (pkt.flags & packet.Type.EOT):
+                elif (pkt.flags == (packet.Type.EOT | packet.Type.ACK) and self.sent_eot):
+                    print("received EOT/ACK; responding with ACK and switch to receiver mode")
+                    self.send_ack()
                     self.is_done = True
                     self.finish_status = SWITCH                
                 elif (pkt.flags & packet.Type.FIN):

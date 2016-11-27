@@ -1,5 +1,5 @@
 import emu.packet as packet
-#import emu.sender
+import emu.sender
 import socket
 import os
 import sys
@@ -155,7 +155,7 @@ class Receiver:
         return self.finish_status
 
 class Host:
-    def __init__(self, cfg_file_path, outputfile):
+    def __init__(self, cfg_file_path, is_receiver, file_list):
         if(not os.path.isfile(cfg_file_path)):
             raise TypeError("cfg_file_path must point to an existing file")
 
@@ -166,28 +166,71 @@ class Host:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
-        self.file = outputfile
+        self.rcv_count = 0
+        self.send_idx = 0
+        self.rcv_prefix = "outputfile"
+        self.is_recv = is_receiver
+        self.file_list = file_list
+
+    def intro(self):
+        print("    Final Assignment: C7005")
+        print("    Mat Siwoski and Shane Spoor\n")
+        print("    Started the Client Program")
 
     def run(self):
-        receiver = Receiver(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"], self.file)
-        result = receiver.run()
-        if(result == DONE):
-            return
+        while(True):
+            if(self.is_recv):
+                self.file = open(self.rcv_prefix + str(self.rcv_count), 'wb')
+                self.rcv_count += 1
+                receiver = Receiver(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"], self.file)
+                result = receiver.run()
+                if(result == DONE):
+                    self.file.close()
+                    return
+                else:
+                    self.is_recv = False
+                    self.file.close()
+            else:
+                if(self.send_idx > len(self.file_list)):
+                    response = packet.create_fin_packet()
+                    self.sock.sendto(response, (self.config["emulator"], self.config["port"]))
+                    return
+                else:
+                    try:
+                        self.file = open(self.file_list[self.send_idx], "rb")
+                        read_data = self.file.read()
+                        file_size = os.stat(self.file_list[self.send_idx]).st_size
+                        self.send_idx += 1
+                        sender = emu.sender.Sender(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"], read_data, file_size)
+
+                        result = sender.run()
+                        if(result == SWITCH):
+                            self.is_recv = True
+                            self.file.close()
+                        else:
+                            self.file.close()
+                            return
+                    except:
+                        print("error while processing file {}, sending FIN".format(self.file_list[self.send_idx]))
+                        response = packet.create_fin_packet()
+                        self.sock.sendto(response, (self.config["emulator"], self.config["port"]))
+                        return
 
 if(__name__ == "__main__"):
     # check whether we're supposed to receive or send first based on cmd-line args
     # start host in appropriate mode 
-    if(len(sys.argv) != 3):
-        print("usage: host [config file] [output file]")
+    if(len(sys.argv) < 4):
+        print("usage: host [config file] [receiver|sender] [list of files...]")
         sys.exit(1)
 
-    try:
-        outputfile = open(sys.argv[2], 'wb')
-    except:
-        print("{} is not a writable file or could not be opened for writing".format(sys.argv[2]))
+    if(sys.argv[2] == "sender"):
+        is_receiver = False
+    elif(sys.argv[2] == "receiver"):
+        is_receiver = True
+    else:
+        print("invalid host mode {}; must be sender or receiver".format(sys.argv[2]))
+        sys.exit(1)
 
-    try:
-        h = Host(sys.argv[1], outputfile)
-        h.run()
-    except Exception as err:
-        print(str(err))
+    files = sys.argv[3:]
+    h = Host(sys.argv[1], is_receiver, files)
+    h.run()
