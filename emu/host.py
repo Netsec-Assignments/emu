@@ -51,14 +51,18 @@ class Receiver:
 
     """We'll stay in this state until receiving a SYN or FIN"""
     def wait_for_syn(self):
-        pkt = self.wait_for_packet(False)
-        if(pkt.flags == packet.Type.FIN):
-            print("received FIN packet, finishing up")
-            self.is_done = True
-            self.finish_status = DONE
-        elif(pkt.flags == (packet.Type.EOT | packet.Type.ACK)):
-            print("received EOT/ACK packet while waiting for SYN; remote side didn't receive final ACK, retransmitting")
-            self.sock.sendto(packet.pack_packet(packet.create_ack_packet(0, 0)), (self.emulator, self.port))
+        while(True):
+            pkt = self.wait_for_packet(False)
+            if(pkt.flags == packet.Type.FIN):
+                print("received FIN packet, finishing up")
+                self.is_done = True
+                self.finish_status = DONE
+                return
+            elif(pkt.flags == (packet.Type.EOT | packet.Type.ACK)):
+                print("received EOT/ACK packet while waiting for SYN; remote side didn't receive final ACK, retransmitting")
+                self.sock.sendto(packet.pack_packet(packet.create_ack_packet(0, 0)), (self.emulator, self.port))
+            elif(pkt.flags == packet.Type.SYN):
+                break
 
         print("received SYN packet; responding with SYN/ACK")
         self.latest_ack = packet.create_synack_packet(pkt)
