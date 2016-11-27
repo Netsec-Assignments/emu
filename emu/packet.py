@@ -89,6 +89,9 @@ def create_synack_packet(syn_packet):
 def create_eot_packet():
     return Packet(Type.EOT, 0, 0, None)
 
+def create_eot_ack_pack():
+    return Packet(Type.EOT | Type.ACK, 0, 0, None)
+
 def create_fin_packet():
     return Packet(Type.FIN, 0, 0, None)
 

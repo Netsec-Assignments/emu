@@ -5,6 +5,8 @@ import os
 import sys
 import json
 
+MAX_EOT_RETRIES = 5
+
 # return values from run() to indicate what the controlling program should do
 SWITCH = 0
 DONE = 1
@@ -25,6 +27,9 @@ class Receiver:
         self.ack_now = False
         self.finish_status = DONE
         self.latest_ack = None
+
+        # EOT state variables
+        self.got_eot = False
 
         # Output
         self.file = outputfile
@@ -51,6 +56,9 @@ class Receiver:
             print("received FIN packet, finishing up")
             self.is_done = True
             self.finish_status = DONE
+        elif(pkt.flags == (packet.Type.EOT | packet.Type.ACK)):
+            print("received EOT/ACK packet while waiting for SYN; remote side didn't receive final ACK, retransmitting")
+            self.sock.sendto(packet.pack_packet(packet.create_ack_packet(0, 0)), (self.emulator, self.port))
 
         print("received SYN packet; responding with SYN/ACK")
         self.latest_ack = packet.create_synack_packet(pkt)
@@ -92,10 +100,15 @@ class Receiver:
             self.is_done = True
             self.finish_status = DONE
 
-        elif(rcvd.flags == packet.Type.EOT):
-            print("received EOT packet; switching to sender mode")
+        elif(rcvd.flags == packet.Type.ACK and self.got_eot):
+            print("received ACK for EOT/ACK, switching modes")
             self.is_done = True
             self.finish_status = SWITCH
+
+        elif(rcvd.flags == packet.Type.EOT):
+            print("received EOT packet, responding with EOT/ACK")
+            self.sock.sendto(packet.pack_packet(packet.create_eot_ack_packet()), (self.emulator, self.port))
+            self.got_eot = True
 
         elif(rcvd.flags == packet.Type.DATA):
             # we got a spurious retransmission
@@ -119,7 +132,7 @@ class Receiver:
             self.latest_ack = packet.create_ack_packet_from_data(rcvd, self.seq_num)
             self.ack_num += rcvd.data_len
             print("received packet with sequence number {}; received {} bytes this window, current ack number is {}".format(rcvd.seq_num, self.rcvd_window_bytes, self.ack_num))
-            self.buf.append(rcvd.data)
+            self.buf.extend(rcvd.data)
 
 
     def run(self):
