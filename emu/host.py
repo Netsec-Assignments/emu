@@ -98,7 +98,7 @@ class Receiver:
                     return
                 else:
                     # != and ! < , so it's greater than the ACK number we were expecting, AKA packets were dropped (or re-ordered, but that's unlikely)
-                    print("packet with sequence number {} was dropped; waiting for timeout and retransmission".format(self.ack_num))
+                    print("received packet with sequence number {}, packet with sequence number {} was dropped".format(rcvd.seq_num, self.ack_num))
                     return
 
             # the sender will always send max data unless it's almost out of data
