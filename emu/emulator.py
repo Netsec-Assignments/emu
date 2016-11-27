@@ -24,7 +24,9 @@ if __name__ == "__main__":
  
     while(True):
         pack, addr = sock.recvfrom(packet.MAX_PACKET_LENGTH)
-        delay = random.randrange(5, 15)
+        delay1 = config["delay"] - config["delay"]/2
+        delay2 = config["delay"] + config["delay"]/2
+        delay = random.randrange(delay1,delay2)
         print("delay for this packet is {} seconds".format(delay / 10))
         if (addr[0] == config["host0"]):
             print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
