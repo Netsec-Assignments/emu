@@ -41,16 +41,19 @@ class Sender:
             
     """We'll stay in this state until receiving a SYN or FIN"""
     def wait_for_syn_ack(self):
-        pkt = self.wait_for_packet(False)
-        if(pkt.flags == packet.Type.FIN):
+        pkt = self.wait_for_packet(True)
+        
+        if (pkt == None):
+            self.send_syn()
+        elif(pkt.flags == packet.Type.FIN):
             print("received FIN packet, finishing up")
             self.is_done = True
             self.finish_status = DONE            
-        elif(pkt.flags == (packet.Type.SYN or packet.Type.ACK)):
+        elif(pkt.flags == (packet.Type.SYN | packet.Type.ACK)):
             print("received SYN_ACK packet: responding with ACK")
             self.latest_ack = pkt
             self.seq_num = max(pkt.ack_num, self.seq_num)
-
+        
 
     """Send initial syn to begin connection"""
     def send_syn(self):
