@@ -118,15 +118,20 @@ class Receiver:
 
 
     def run(self):
-        print("waiting for SYN packet...")
-        self.wait_for_syn()
-        if(self.is_done):
-            print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
-            return self.finish_status
+        try:
+            print("waiting for SYN packet...")
+            self.wait_for_syn()
+            if(self.is_done):
+                print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
+                return self.finish_status
         
-        print("entering main receiver loop")
-        while(not self.is_done):
-            self.handle_next_packet()
+            print("entering main receiver loop")
+            while(not self.is_done):
+                self.handle_next_packet()
+        except KeyboardInterrupt:
+            print("\ncaught keyboard interrupt, sending FIN")
+            self.sock.sendto(packet.pack_packet(packet.create_fin_packet()), (self.emulator, self.port))
+            self.finish_status = DONE
 
         print("finished running, returning status {}".format("SWITCH" if self.finish_status == SWITCH else "DONE"))
         return self.finish_status
