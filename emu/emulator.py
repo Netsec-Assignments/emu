@@ -18,9 +18,9 @@ if __name__ == "__main__":
         
     
     with open(sys.argv[1]) as config_file:    
-            config = json.load(config_file)
+        config = json.load(config_file)
 
-            delay1 = config["delay"] - config["delay"]/2
+    delay1 = config["delay"] - config["delay"]/2
     delay2 = config["delay"] + config["delay"]/2
     bit_error_percent = config["BER"]
 
