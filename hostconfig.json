@@ -4,5 +4,7 @@
     "emulator": "192.168.0.9",
     "timeout": 15.0,
     "port": 25500,
-    "window_size": 10
+    "window_size": 10,
+    "delay": 2,
+    "BER":0
 }
