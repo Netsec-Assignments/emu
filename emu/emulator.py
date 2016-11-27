@@ -43,6 +43,8 @@ if __name__ == "__main__":
                 if(bit_error_rate > bit_error_percent):
                     print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
                     sock.sendto(pack, (config["host1"], config["port"]))
+                else:
+                    print("packet has been dropped")
             elif (emulator_function == "delay"):
                 print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
                 time.sleep(delay / 10)
@@ -53,6 +55,8 @@ if __name__ == "__main__":
                     print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))
                     time.sleep(delay / 10)            
                     sock.sendto(pack, (config["host0"], config["port"]))
+                else:
+                    print("packet has been dropped")
             elif (emulator_function == "delay"):
                 print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))
                 time.sleep(delay / 10)            
