@@ -25,8 +25,11 @@ if __name__ == "__main__":
     bit_error_percent = config["BER"]
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('', config["port"]))
-
+    print("    Welcome to the goodput emulator\n")
+    print("    Shane Spoor and Mat Siwoski\n")
+    
     print("started emulator with host 0 {} and host 1 {} on port {}".format(config["host0"], config["host1"], config["port"]))
     print("user has select {} for the emulator function".format(emulator_function))
     
@@ -36,12 +39,12 @@ if __name__ == "__main__":
             bit_error_rate = random.randrange(0, 100)
             print("the bit error rate is {}".format(bit_error_rate))
         elif (emulator_function == "Delay"):
-            delay = random.randrange(delay1, delay2)
+            delay = 0 if config["delay"] == 0 else random.randrange(delay1, delay2)
             print("delay for this packet is {} seconds".format(delay / 10))
         elif(emulator_function == "Both"):
             bit_error_rate = random.randrange(0, 100)
-            print("the bit error rate is {}".format(bit_error_rate))
-            delay = random.randrange(delay1, delay2)
+            print("Bit Error rate of {} > bit error percent of {}".format(bit_error_rate,bit_error_percent))
+            delay = 0 if config["delay"] == 0 else random.randrange(delay1, delay2)
             print("delay for this packet is {} seconds".format(delay / 10))
         if (addr[0] == config["host0"]):
             if (emulator_function == "BER"):
