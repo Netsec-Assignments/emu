@@ -5,6 +5,6 @@
     "timeout": 0.05,
     "port": 25500,
     "window_size": 10,
-    "delay": 0.5,
-    "BER":5
+    "delay": 0.005,
+    "BER":30
 }

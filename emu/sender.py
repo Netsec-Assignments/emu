@@ -29,7 +29,9 @@ class Sender:
         self.current_offset = 0
         self.bytes_left = 0
         self.bytes_to_read = 0
-    
+        self.retries_eot = 0
+        self.retries_syn = 0
+
         #File info
         self.read_data = read_data
         self.file_size = file_size
@@ -93,6 +95,9 @@ class Sender:
         self.bytes_left = self.file_size - self.current_offset
         self.bytes_to_read = min(self.bytes_left, packet.MAX_DATA_LENGTH * self.window_size)
 
+        if (self.bytes_to_read == 0):
+            self.send_eot()
+
         end = self.current_offset + self.bytes_to_read
         packets = packet.create_data_packets(bytes(self.read_data[self.current_offset:end]), self.seq_num)
         for p in packets:
@@ -120,7 +125,7 @@ class Sender:
             if (pkt != None):
                 if (pkt.flags & packet.Type.ACK):
                     print("received ACK with ack_num {} from host {}".format(pkt.ack_num, self.emulator))
-                    self.seq_num = max(pkt.ack_num, self.seq_num)   
+                    self.seq_num = max(pkt.ack_num, self.seq_num)
                     self.send_data()
                 elif (pkt.flags & packet.Type.EOT):
                     self.is_done = True

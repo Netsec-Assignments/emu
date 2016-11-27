@@ -8,7 +8,7 @@ import time
 
 if __name__ == "__main__":
     if (len(sys.argv) != 3):
-        print("usage: emulator [config file] [BER|Delay|Both]")
+        print("usage: emulator [config file] [BER|Delay|Both|None]")
         sys.exit(1)
     elif (not os.path.isfile(sys.argv[1])):
         print("no such file {}!".format(sys.argv[1]))
@@ -42,60 +42,67 @@ if __name__ == "__main__":
                 flags.append("DATA")
             if(unpacked.flags & packet.Type.ACK):
                 flags.append("ACK")
+                print("received packet with flags {}, seq num {}, ack_num {}".format('|'.join(map(str, flags)), unpacked.seq_num, unpacked.ack_num))
             if(unpacked.flags & packet.Type.SYN):
                 flags.append("SYN")
             if(unpacked.flags & packet.Type.EOT):
                 flags.append("EOT")
             if(unpacked.flags & packet.Type.FIN):
                 flags.append("FIN")
-            print("received packet with flags {}, seq num {}, ack_num {}".format('|'.join(map(str, flags)), unpacked.seq_num, unpacked.ack_num))
+#            print("received packet with flags {}, seq num {}, ack_num {}".format('|'.join(map(str, flags)), unpacked.seq_num, unpacked.ack_num))
+            
             if (emulator_function == "BER"):
                 bit_error_rate = random.randrange(0, 100)
-                print("the bit error rate is {}".format(bit_error_rate))
+#                print("the bit error rate is {}".format(bit_error_rate))
             elif (emulator_function == "Delay"):
-                delay = 0 if config["delay"] == 0 else random.randrange(delay1, delay2)
-                print("delay for this packet is {} seconds".format(delay / 10))
+                delay = random.uniform(delay1 ,delay2)
+#                print("delay for this packet is {} seconds".format(delay / 10))
             elif(emulator_function == "Both"):
                 bit_error_rate = random.randrange(0, 100)
-                print("Bit Error rate of {} && bit error percent of {}".format(bit_error_rate,bit_error_percent))
-                delay = 0 if config["delay"] == 0 else random.randrange(delay1, delay2)
-                print("delay for this packet is {} seconds".format(delay / 10))
+#                print("Bit Error rate of {} && bit error percent of {}".format(bit_error_rate,bit_error_percent))
+                delay = random.uniform(delay1 ,delay2)
+#                print("delay for this packet is {} seconds".format(delay / 10))
+            
             if (addr[0] == config["host0"]):
                 if (emulator_function == "BER"):
                     if(bit_error_rate >= bit_error_percent):
-                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
+#                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
                         sock.sendto(pack, (config["host1"], config["port"]))
                     else:
                         print("packet has been dropped")
                 elif (emulator_function == "Delay"):
-                    print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
+#                    print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
                     time.sleep(delay / 10)
                     sock.sendto(pack, (config["host1"], config["port"]))
                 elif (emulator_function == "Both"):
                     if(bit_error_rate >= bit_error_percent):
                         time.sleep(delay / 10)
-                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
+#                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
                         sock.sendto(pack, (config["host1"], config["port"]))
                     else:
                         print("packet has been dropped")
+                elif(emulator_function == "None"):
+                    sock.sendto(pack, (config["host1"], config["port"]))
             elif (addr[0] == config["host1"]):
                 if (emulator_function == "BER"):
                     if(bit_error_rate >= bit_error_percent):
-                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
+#                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
                         sock.sendto(pack, (config["host0"], config["port"]))
                     else:
                         print("packet has been dropped")
                 elif (emulator_function == "Delay"):
-                    print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))
+#                    print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))
                     time.sleep(delay / 10)            
                     sock.sendto(pack, (config["host0"], config["port"]))
                 elif (emulator_function == "Both"):
                     if(bit_error_rate >= bit_error_percent):
                         time.sleep(delay / 10)
-                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
+#                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
                         sock.sendto(pack, (config["host0"], config["port"]))
                     else:
                         print("packet has been dropped")
+                elif(emulator_function == "None"):
+                    sock.sendto(pack, (config["host0"], config["port"]))
         except KeyboardInterrupt:
             print("\nCaught keyboard interrupt, exiting")
             sys.exit(0)
