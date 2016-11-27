@@ -128,15 +128,15 @@ class Sender:
         while(not self.is_done):
             pkt = self.wait_for_packet()
             if (pkt != None):
-                if (pkt.flags & packet.Type.ACK):
-                    print("received ACK with ack_num {} from host {}".format(pkt.ack_num, self.emulator))
-                    self.seq_num = max(pkt.ack_num, self.seq_num)
-                    self.send_data()
-                elif (pkt.flags == (packet.Type.EOT | packet.Type.ACK) and self.sent_eot):
+                if (pkt.flags == (packet.Type.EOT | packet.Type.ACK) and self.sent_eot):
                     print("received EOT/ACK; responding with ACK and switch to receiver mode")
                     self.send_ack()
                     self.is_done = True
-                    self.finish_status = SWITCH                
+                    self.finish_status = SWITCH      
+                elif (pkt.flags & packet.Type.ACK):
+                    print("received ACK with ack_num {} from host {}".format(pkt.ack_num, self.emulator))
+                    self.seq_num = max(pkt.ack_num, self.seq_num)
+                    self.send_data()          
                 elif (pkt.flags & packet.Type.FIN):
                     self.is_done = True
                     self.finish_status = DONE

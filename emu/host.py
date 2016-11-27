@@ -85,10 +85,15 @@ class Receiver:
 
         # wait_for_packet returns None on timeout
         if(rcvd == None):
-            # re-send last ACK
-            print("timed out while waiting for packet; retransmitting ack with ack number {}".format(self.ack_num))
-            response = packet.pack_packet(self.latest_ack)
-            self.sock.sendto(response, (self.emulator, self.port))
+            if(not self.got_eot):
+                # re-send last ACK
+                print("timed out while waiting for packet; retransmitting ack with ack number {}".format(self.ack_num))
+                response = packet.pack_packet(self.latest_ack)
+                self.sock.sendto(response, (self.emulator, self.port))
+            else:
+                # need to resend EOT/ACK
+                print("timed out while waiting for final ACK; retransmitting EOT/ACK")
+                self.sock.sendto(packet.pack_packet(packet.create_eot_ack_packet()), (self.emulator, self.port))
 
         elif(rcvd.flags == packet.Type.SYN):
             print("received another SYN packet; responding with SYN/ACK")
@@ -105,7 +110,7 @@ class Receiver:
             self.is_done = True
             self.finish_status = SWITCH
 
-        elif(rcvd.flags == packet.Type.EOT):
+        elif(rcvd.flags == packet.Type.EOT and not self.got_eot):
             print("received EOT packet, responding with EOT/ACK")
             self.sock.sendto(packet.pack_packet(packet.create_eot_ack_packet()), (self.emulator, self.port))
             self.got_eot = True
