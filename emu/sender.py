@@ -94,7 +94,7 @@ class Sender:
         self.bytes_to_read = min(self.bytes_left, packet.MAX_DATA_LENGTH * self.window_size)
 
         end = self.current_offset + self.bytes_to_read
-        packets = packet.create_data_packets(bytes(self.read_data[self.current_offset:end]), self.seq_num)
+        packets = packet.create_data_packets(bytes(self.read_data[self.current_offset:end], "UTF-8"), self.seq_num)
         for p in packets:
             self.sock.sendto(packet.pack_packet(p), (self.emulator, self.port))
             print("sent DATA packet with seq {} and data len {} to {} on port {}".format(p.seq_num, p.data_len, self.emulator, self.port))
