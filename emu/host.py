@@ -229,12 +229,16 @@ class Host:
 if(__name__ == "__main__"):
     # check whether we're supposed to receive or send first based on cmd-line args
     # start host in appropriate mode 
-    if(len(sys.argv) < 4):
+    if(len(sys.argv) < 3):
         print("usage: host [config file] [receiver|sender] [list of files...]")
         sys.exit(1)
 
     if(sys.argv[2] == "sender"):
-        is_receiver = False
+        if(len(sys.argv) < 4):
+            print("must specify file list for sender")
+            sys.exit(1)
+        else:
+            is_receiver = False
     elif(sys.argv[2] == "receiver"):
         is_receiver = True
     else:
