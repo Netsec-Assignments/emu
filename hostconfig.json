@@ -6,5 +6,5 @@
     "port": 25500,
     "window_size": 10,
     "delay": 0,
-    "BER":0
+    "BER":50
 }
