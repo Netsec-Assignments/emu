@@ -128,6 +128,7 @@ class Client:
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('', self.config["port"]))
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
         self.sock.settimeout(self.config["timeout"])
         self.is_sender = is_sender
        
