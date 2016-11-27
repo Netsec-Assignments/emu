@@ -10,7 +10,7 @@ SWITCH = 0
 DONE = 1
 
 class Receiver:
-    def __init__(self, sock, port, emulator, window_size):
+    def __init__(self, sock, port, emulator, window_size, outputfile):
         # Config variables        
         self.sock = sock
         self.port = port
@@ -25,6 +25,10 @@ class Receiver:
         self.ack_now = False
         self.finish_status = DONE
         self.latest_ack = None
+
+        # Output
+        self.file = outputfile
+        self.buf = bytearray()
 
     def wait_for_packet(self, return_on_timeout = True):
         while(True):
@@ -63,7 +67,10 @@ class Receiver:
             
             self.ack_now = False
             self.rcvd_window_bytes = 0
-            # write byte_buf to file system or something
+
+            # write buffer to file and create an empty buffer
+            self.file.write(self.buf)
+            self.buf = bytearray()
 
         print("waiting for next packet...")
         rcvd = self.wait_for_packet(True)
@@ -112,7 +119,7 @@ class Receiver:
             self.latest_ack = packet.create_ack_packet_from_data(rcvd, self.seq_num)
             self.ack_num += rcvd.data_len
             print("received packet with sequence number {}; received {} bytes this window, current ack number is {}".format(rcvd.seq_num, self.rcvd_window_bytes, self.ack_num))
-            # add data to byte_buf
+            self.buf.append(rcvd.data)
 
 
     def run(self):
@@ -135,7 +142,7 @@ class Receiver:
         return self.finish_status
 
 class Host:
-    def __init__(self, cfg_file_path, is_receiver):
+    def __init__(self, cfg_file_path, outputfile):
         if(not os.path.isfile(cfg_file_path)):
             raise TypeError("cfg_file_path must point to an existing file")
 
@@ -146,37 +153,28 @@ class Host:
         self.sock.bind(('', self.config["port"]))
         self.sock.settimeout(self.config["timeout"])
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.is_recv = is_receiver
+        self.file = outputfile
 
     def run(self):
-        while(True):
-            if(self.is_recv):
-                receiver = Receiver(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"])
-                result = receiver.run()
-                if(result == DONE):
-                    return
-                else:
-                    self.is_recv = False
-            else:
-                # Initialise sender and run it
-                pass
+        receiver = Receiver(self.sock, self.config["port"], self.config["emulator"], self.config["window_size"], self.file)
+        result = receiver.run()
+        if(result == DONE):
+            return
 
 if(__name__ == "__main__"):
     # check whether we're supposed to receive or send first based on cmd-line args
     # start host in appropriate mode 
     if(len(sys.argv) != 3):
-        print("usage: host <config file> [receiver|sender]")
-        sys.exit(1)
-
-    is_receiver = False
-    if(sys.argv[2] == "receiver"):
-        is_receiver = True
-    elif(sys.argv[2] != "sender"):
-        print("usage: host [config file] [receiver|sender]")
+        print("usage: host [config file] [output file]")
         sys.exit(1)
 
     try:
-        h = Host(sys.argv[1], is_receiver)
+        outputfile = open(sys.argv[2], 'wb')
+    except:
+        print("{} is not a writable file or could not be opened for writing".format(sys.argv[2]))
+
+    try:
+        h = Host(sys.argv[1], outputfile)
         h.run()
     except Exception as err:
         print(str(err))
