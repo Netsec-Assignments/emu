@@ -35,6 +35,7 @@ if __name__ == "__main__":
     
     while(True):
         try:
+            pack = None
             pack, addr = sock.recvfrom(packet.MAX_PACKET_LENGTH)
             unpacked = packet.unpack_packet(pack)
             flags = []
@@ -42,7 +43,6 @@ if __name__ == "__main__":
                 flags.append("DATA")
             if(unpacked.flags & packet.Type.ACK):
                 flags.append("ACK")
-#                print("received packet with flags {}, seq num {}, ack_num {}".format('|'.join(map(str, flags)), unpacked.seq_num, unpacked.ack_num))
             if(unpacked.flags & packet.Type.SYN):
                 flags.append("SYN")
             if(unpacked.flags & packet.Type.EOT):
@@ -62,47 +62,36 @@ if __name__ == "__main__":
                 print("Bit Error rate of {} && bit error percent of {}".format(bit_error_rate,bit_error_percent))
                 delay = random.uniform(delay1 ,delay2)
                 print("delay for this packet is {} seconds".format(delay / 10))
-            
+
+            dest = None            
             if (addr[0] == config["host0"]):
-                if (emulator_function == "BER"):
-                    if(bit_error_rate >= bit_error_percent):
-                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
-                        sock.sendto(pack, (config["host1"], config["port"]))
-                    else:
-                        print("packet {} has been dropped")
-                elif (emulator_function == "Delay"):
-                    print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
-                    time.sleep(delay / 10)
-                    sock.sendto(pack, (config["host1"], config["port"]))
-                elif (emulator_function == "Both"):
-                    if(bit_error_rate >= bit_error_percent):
-                        time.sleep(delay / 10)
-                        print("received packet from {}, forwarding to {}".format(config["host0"], config["host1"]))
-                        sock.sendto(pack, (config["host1"], config["port"]))
-                    else:
-                        print("packet has been dropped")
-                elif(emulator_function == "None"):
-                    sock.sendto(pack, (config["host1"], config["port"]))
+                dest = config["host1"]
             elif (addr[0] == config["host1"]):
-                if (emulator_function == "BER"):
+                dest = config["host0"]
+
+            if (dest):
+                if(emulator_function == "None"):
+                     print("send all the packets")
+                     sock.sendto(pack, (dest, config["port"]))
+                elif (emulator_function == "BER"):
                     if(bit_error_rate >= bit_error_percent):
-                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
-                        sock.sendto(pack, (config["host0"], config["port"]))
+                        print("received packet from {}, forwarding to {}".format(addr[0], dest))
+                        sock.sendto(pack, (dest, config["port"]))
                     else:
                         print("packet has been dropped")
                 elif (emulator_function == "Delay"):
-                    print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))
-                    time.sleep(delay / 10)            
-                    sock.sendto(pack, (config["host0"], config["port"]))
+                    print("received packet from {}, forwarding to {}".format(addr[0], dest))
+                    time.sleep(delay / 10)
+                    sock.sendto(pack, (dest, config["port"]))
                 elif (emulator_function == "Both"):
                     if(bit_error_rate >= bit_error_percent):
                         time.sleep(delay / 10)
-                        print("received packet from {}, forwarding to {}".format(config["host1"], config["host0"]))           
-                        sock.sendto(pack, (config["host0"], config["port"]))
+                        print("received packet from {}, forwarding to {}".format(addr[0], dest))
+                        sock.sendto(pack, (dest, config["port"]))
                     else:
                         print("packet has been dropped")
-                elif(emulator_function == "None"):
-                    sock.sendto(pack, (config["host0"], config["port"]))
+                        pack = None
+                
         except KeyboardInterrupt:
             print("\nCaught keyboard interrupt, exiting")
             sys.exit(0)
