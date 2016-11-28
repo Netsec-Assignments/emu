@@ -52,9 +52,8 @@ class Sender:
             
     """We'll stay in this state until receiving a SYN or FIN"""
     def wait_for_syn_ack(self):
-        pkt = self.wait_for_packet(True)
-        
         while(True):
+            pkt = self.wait_for_packet(True)
             if (pkt == None):
                 self.send_syn()
             elif(pkt.flags == packet.Type.FIN):
