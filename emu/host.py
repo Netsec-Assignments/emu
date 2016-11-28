@@ -27,6 +27,8 @@ class Receiver:
         self.ack_now = False
         self.finish_status = DONE
         self.latest_ack = None
+        self.reacked = False
+        self.reacked_seq_num = 0
 
         # EOT state variables
         self.got_eot = False
@@ -78,6 +80,7 @@ class Receiver:
             self.sock.sendto(response, (self.emulator, self.port))
             
             self.ack_now = False
+            self.reacked = False
             self.rcvd_window_bytes = 0
 
             # write buffer to file and create an empty buffer
@@ -89,6 +92,7 @@ class Receiver:
 
         # wait_for_packet returns None on timeout
         if(rcvd == None):
+            self.reacked = False
             if(not self.got_eot):
                 # re-send last ACK
                 print("timed out while waiting for packet; retransmitting ack with ack number {}".format(self.ack_num))
@@ -124,6 +128,16 @@ class Receiver:
             if(rcvd.seq_num != self.ack_num):
                 if(rcvd.seq_num < self.ack_num):
                     print("spurious retransmission with sequence number {}".format(rcvd.seq_num))
+                    if(not self.reacked):
+                        print("retransmitting ACK in response to spurious retransmission")
+                        response = packet.pack_packet(self.latest_ack)
+                        self.sock.sendto(response, (self.emulator, self.port))
+                        self.reacked_seq_num = rcvd.seq_num
+                        self.reacked = True
+                    elif(rcvd.seq_num == self.reacked_seq_num):
+                        print("retransmitting ACK in response to spurious retransmission")
+                        response = packet.pack_packet(self.latest_ack)
+                        self.sock.sendto(response, (self.emulator, self.port))
                     return
                 else:
                     # != and ! < , so it's greater than the ACK number we were expecting, AKA packets were dropped (or re-ordered, but that's unlikely)
