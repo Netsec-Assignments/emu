@@ -2,9 +2,9 @@
     "host0": "192.168.0.8",
     "host1": "192.168.0.10",
     "emulator": "192.168.0.9",
-    "timeout": 10,
+    "timeout": 1,
     "port": 25500,
     "window_size": 10,
-    "delay": 0.5,
+    "delay": 0.2,
     "BER":30
 }
