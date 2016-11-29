@@ -56,12 +56,12 @@ if __name__ == "__main__":
                 print("the bit error rate is {}".format(bit_error_rate))
             elif (emulator_function == "Delay"):
                 delay = random.uniform(delay1 ,delay2)
-                print("delay for this packet is {} seconds".format(delay / 10))
+                print("delay for this packet is {} seconds".format(delay))
             elif(emulator_function == "Both"):
                 bit_error_rate = random.randrange(0, 100)
                 print("Bit Error rate of {} && bit error percent of {}".format(bit_error_rate,bit_error_percent))
                 delay = random.uniform(delay1 ,delay2)
-                print("delay for this packet is {} seconds".format(delay / 10))
+                print("delay for this packet is {} seconds".format(delay))
 
             dest = None            
             if (addr[0] == config["host0"]):
