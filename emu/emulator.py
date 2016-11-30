@@ -13,11 +13,11 @@ if __name__ == "__main__":
     elif (not os.path.isfile(sys.argv[1])):
         print("no such file {}!".format(sys.argv[1]))
         sys.exit(1)
-   
+
     emulator_function = sys.argv[2]
-        
-    
-    with open(sys.argv[1]) as config_file:    
+
+
+    with open(sys.argv[1]) as config_file:
         config = json.load(config_file)
 
     delay1 = config["delay"] - config["delay"]/2
@@ -29,10 +29,13 @@ if __name__ == "__main__":
     sock.bind(('', config["port"]))
     print("    Welcome to the goodput emulator\n")
     print("    Shane Spoor and Mat Siwoski\n")
-    
+
     print("started emulator with host 0 {} and host 1 {} on port {}".format(config["host0"], config["host1"], config["port"]))
     print("user has select {} for the emulator function".format(emulator_function))
-    
+
+    dropped = 0
+    gotFin = False
+
     while(True):
         try:
             pack = None
@@ -48,9 +51,15 @@ if __name__ == "__main__":
             if(unpacked.flags & packet.Type.EOT):
                 flags.append("EOT")
             if(unpacked.flags & packet.Type.FIN):
+                gotFin = True
                 flags.append("FIN")
             print("received packet with flags {}, seq num {}, ack_num {}".format('|'.join(map(str, flags)), unpacked.seq_num, unpacked.ack_num))
-            
+
+            if(gotFin and (emulator_function == "BER" or emulator_function == "Both")):
+                print("number of packets dropped this session: {}".format(dropped))
+                dropped = 0;
+                gotFin = False
+
             if (emulator_function == "BER"):
                 bit_error_rate = random.randrange(0, 100)
                 print("the bit error rate is {}".format(bit_error_rate))
@@ -63,7 +72,7 @@ if __name__ == "__main__":
                 delay = random.uniform(delay1 ,delay2)
                 print("delay for this packet is {} seconds".format(delay))
 
-            dest = None            
+            dest = None
             if (addr[0] == config["host0"]):
                 dest = config["host1"]
             elif (addr[0] == config["host1"]):
@@ -79,6 +88,7 @@ if __name__ == "__main__":
                         sock.sendto(pack, (dest, config["port"]))
                     else:
                         print("packet has been dropped")
+                        c
                 elif (emulator_function == "Delay"):
                     print("received packet from {}, forwarding to {}".format(addr[0], dest))
                     time.sleep(delay / 10)
@@ -90,8 +100,9 @@ if __name__ == "__main__":
                         sock.sendto(pack, (dest, config["port"]))
                     else:
                         print("packet has been dropped")
+                        dropped += 1
                         pack = None
-                
+
         except KeyboardInterrupt:
             print("\nCaught keyboard interrupt, exiting")
             sys.exit(0)
